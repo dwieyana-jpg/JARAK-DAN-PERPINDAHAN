@@ -143,16 +143,19 @@
     pointer-events: none;
   }
 
+  /* ============ KATAK (PROPORSIONAL) ============ */
+  /* Ukuran pakai clamp: min 24px, ideal 5vw, max 44px */
   #katak {
     position: absolute;
     bottom: 45px;
-    width: 50px;
-    height: 50px;
+    width: clamp(24px, 5vw, 44px);
+    height: clamp(24px, 5vw, 44px);
     object-fit: contain;
     filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.4));
     z-index: 5;
     will-change: left, transform;
-    margin-left: -25px;
+    /* Centering horizontal: geser kiri setengah lebar */
+    margin-left: calc(clamp(24px, 5vw, 44px) / -2);
     transition: transform 0.05s linear;
   }
 
@@ -160,14 +163,14 @@
   .jejak {
     position: absolute;
     bottom: 50px;
-    width: 12px;
-    height: 12px;
+    width: clamp(8px, 1.5vw, 12px);
+    height: clamp(8px, 1.5vw, 12px);
     background: rgba(255, 100, 100, 0.9);
     border-radius: 50%;
     border: 2px solid #fff;
     z-index: 4;
-    margin-left: -6px;
-    margin-bottom: -6px;
+    margin-left: calc(clamp(8px, 1.5vw, 12px) / -2);
+    margin-bottom: calc(clamp(8px, 1.5vw, 12px) / -2);
     box-shadow: 0 0 6px rgba(0,0,0,0.4);
   }
 
@@ -312,19 +315,20 @@
     .tick { bottom: 40px; }
     .tick-label { bottom: 18px; font-size: 0.62rem; }
 
+    /* Katak lebih kecil proporsional di HP */
     #katak {
-      width: 38px;
-      height: 38px;
       bottom: 35px;
-      margin-left: -19px;
+      width: clamp(22px, 6vw, 32px);
+      height: clamp(22px, 6vw, 32px);
+      margin-left: calc(clamp(22px, 6vw, 32px) / -2);
     }
 
     .jejak {
-      width: 10px;
-      height: 10px;
+      width: clamp(8px, 2vw, 10px);
+      height: clamp(8px, 2vw, 10px);
       bottom: 42px;
-      margin-left: -5px;
-      margin-bottom: -5px;
+      margin-left: calc(clamp(8px, 2vw, 10px) / -2);
+      margin-bottom: calc(clamp(8px, 2vw, 10px) / -2);
     }
 
     .jejak-label {
@@ -363,12 +367,29 @@
     h1 { font-size: 1rem; }
     .card .value { font-size: 1rem; }
     .arena { height: 115px; }
-    #katak { width: 32px; height: 32px; margin-left: -16px; bottom: 30px; }
     .axis { bottom: 40px; }
     .tick { bottom: 35px; }
     .tick-label { bottom: 14px; font-size: 0.58rem; }
-    .jejak { bottom: 37px; }
-    .jejak-label { bottom: 48px; font-size: 0.5rem; }
+
+    #katak {
+      bottom: 30px;
+      width: clamp(20px, 5.5vw, 26px);
+      height: clamp(20px, 5.5vw, 26px);
+      margin-left: calc(clamp(20px, 5.5vw, 26px) / -2);
+    }
+
+    .jejak {
+      width: 7px;
+      height: 7px;
+      bottom: 37px;
+      margin-left: -3.5px;
+      margin-bottom: -3.5px;
+    }
+
+    .jejak-label {
+      bottom: 48px;
+      font-size: 0.5rem;
+    }
   }
 </style>
 </head>
@@ -458,7 +479,7 @@ const infoStatus       = document.getElementById('infoStatus');
 
 /* Skala arena: 0..80 meter */
 const MAX_METER = 80;
-let PADDING = 50; // dihitung ulang saat init/resize
+let PADDING = 50;
 
 let posisiAwal = 0;
 let katakEl    = null;
@@ -516,9 +537,12 @@ function buatKatak() {
   katakEl.onerror = () => {
     const fallback = document.createElement('div');
     fallback.id = 'katak';
-    fallback.style.fontSize = '38px';
-    fallback.style.lineHeight = '50px';
+    fallback.style.fontSize = '30px';
+    fallback.style.lineHeight = '1';
     fallback.style.textAlign = 'center';
+    fallback.style.display = 'flex';
+    fallback.style.alignItems = 'center';
+    fallback.style.justifyContent = 'center';
     fallback.style.color = '#0a3d0a';
     fallback.textContent = '🐸';
     katakEl.replaceWith(fallback);
@@ -529,33 +553,27 @@ function buatKatak() {
   arena.appendChild(katakEl);
 }
 
-/* ---------- Set posisi katak (dalam meter) ---------- */
+/* ---------- Set posisi katak ---------- */
+/* Centering horizontal sudah dihandle oleh CSS margin-left, 
+   jadi cukup set left saja */
 function setPosisiKatak(meter) {
   if (!katakEl) return;
   const xCenter = meterToPixel(meter);
-  const offset = katakEl.offsetWidth / 2 || 25;
-  katakEl.style.marginLeft = (-offset) + 'px';
   katakEl.style.left = xCenter + 'px';
 }
 
-/* ---------- Tambah jejak (dengan label opsional) ---------- */
+/* ---------- Tambah jejak ---------- */
 function tambahJejak(meter, warna = 'rgba(255,100,100,0.9)', label = null, warnaLabel = null) {
   const xCenter = meterToPixel(meter);
 
-  // Jejak (titik)
   const j = document.createElement('div');
   j.className = 'jejak';
   j.style.left = xCenter + 'px';
   j.style.background = warna;
   j.dataset.meter = meter;
-  setTimeout(() => {
-    const off = j.offsetWidth / 2 || 6;
-    j.style.marginLeft = (-off) + 'px';
-  }, 0);
   arena.appendChild(j);
   jejakEls.push(j);
 
-  // Label teks di atas jejak
   if (label) {
     const lbl = document.createElement('div');
     lbl.className = 'jejak-label';
@@ -587,7 +605,6 @@ function resetSimulasi() {
   buatKatak();
   setPosisiKatak(0);
 
-  // Titik awal (biru) — selalu ada
   tambahJejak(0, 'rgba(60,120,255,0.95)', 'awal', 'rgba(60,120,255,0.9)');
 
   hasilPerpindahan.textContent = '0';
@@ -616,7 +633,7 @@ function animasiLompat(targetMeter, durasi) {
 
       setPosisiKatak(currentMeter);
 
-      const tinggi = Math.sin(t * Math.PI) * 25;
+      const tinggi = Math.sin(t * Math.PI) * 22;
       if (katakEl) {
         katakEl.style.transform = `translateY(-${tinggi}px)`;
       }
@@ -656,20 +673,18 @@ async function jalankanSimulasi() {
   btnLompat.disabled = true;
   btnReset.disabled = true;
 
-  // Reset posisi & jejak
   hapusJejak();
   posisiAwal = 0;
   buatKatak();
   setPosisiKatak(0);
 
-  // ⭐ Jejak TITIK AWAL (biru) — selalu dimunculkan
+  // Jejak titik awal (biru) — selalu ada
   tambahJejak(0, 'rgba(60,120,255,0.95)', 'awal', 'rgba(60,120,255,0.9)');
 
   // ===== LOMPAT 1: +X =====
   infoStatus.innerHTML = `🐸 Melompat ke arah <b>+X</b> sejauh ${maju} m...`;
   await animasiLompat(maju, 1000);
 
-  // ⭐ Jejak TITIK BELOK (kuning)
   tambahJejak(maju, 'rgba(255,200,0,0.95)', `+${maju}`, 'rgba(255,180,0,0.9)');
 
   await new Promise(r => setTimeout(r, 300));
@@ -679,7 +694,6 @@ async function jalankanSimulasi() {
   infoStatus.innerHTML = `🐸 Balik melompat ke arah <b>−X</b> sejauh ${balik} m...`;
   await animasiLompat(posisiAkhir, 1000);
 
-  // ⭐ Jejak TITIK AKHIR (merah)
   tambahJejak(posisiAkhir, 'rgba(255,80,80,0.95)', 'akhir', 'rgba(255,80,80,0.9)');
 
   await new Promise(r => setTimeout(r, 300));
@@ -709,7 +723,6 @@ async function jalankanSimulasi() {
 btnLompat.addEventListener('click', jalankanSimulasi);
 btnReset.addEventListener('click', resetSimulasi);
 
-// Resize & orientasi
 window.addEventListener('resize', () => {
   initArena();
   setPosisiKatak(posisiAwal);
@@ -729,7 +742,6 @@ window.addEventListener('orientationchange', () => {
   setTimeout(() => window.dispatchEvent(new Event('resize')), 200);
 });
 
-/* ---------- Mulai ---------- */
 window.addEventListener('load', () => {
   requestAnimationFrame(() => {
     initArena();
